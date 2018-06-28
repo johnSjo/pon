@@ -9,7 +9,7 @@
     },
     "rules": {
         "object-curly-spacing": ["error", "always"],
-        "dot-location": ["error", "object"],
+        "dot-location": ["error", "property"],
         "no-underscore-dangle": 0
     }
 }

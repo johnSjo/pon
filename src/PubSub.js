@@ -6,8 +6,8 @@ export default {
 
         function publish (topic, message) {
 
-            subscriptions.filter((subscription) => subscription.topic === topic).
-                forEach((subscription) => {
+            subscriptions.filter((subscription) => subscription.topic === topic)
+                .forEach((subscription) => {
                     subscription.callback(message);
                 });
         }
