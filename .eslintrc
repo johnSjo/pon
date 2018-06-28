@@ -9,7 +9,9 @@
     },
     "rules": {
         "object-curly-spacing": ["error", "always"],
+        "space-before-function-paren": ["error", "always"],
         "dot-location": ["error", "property"],
-        "no-underscore-dangle": 0
+        "no-underscore-dangle": 0,
+        "semi": ["error", "always"]
     }
 }
