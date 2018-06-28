@@ -6,6 +6,7 @@ const BASE_WIDTH = 728;
 const BASE_HEIGHT = 1050;
 
 const LAYERS = [
+    'gameField'
 ];
 
 const INTERACTIVE_LAYERS = [
