@@ -1,77 +1,83 @@
 
 
 // Things it need to do:
-    // make new row with bricks
     // move everything up
     // keep track of where the bricks are
         // if a row is empty -> remove it
-    // swap bricks
     // when a position becomes empty ->
         // check if there are any bricks above that need to fall down
 
-import Brick from './Brick';
-import loader from './assetsLoader'
-import { getRenderLayer } from './renderer'
+import loader from './assetsLoader';
+import { getRenderLayer } from './renderer';
+import makeNewRow from './brickRow';
 
 const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
 
-const BRICK_SIZE = 80;
+function checkPatterns (brickField, rowIndex, colIndex) {
+    return Promise.resolve();
+}
 
-const PADDING = 5;
+function swapBricks (brickRow, index, brickField) {
+    const leftBrick = brickRow[index];
+    const rightBrick = brickRow[index + 1];
+    const waitForSwap = [];
 
-const FIELD_WIDTH = 8;
+    [brickRow[index], brickRow[index + 1]] = [brickRow[index + 1], brickRow[index]];
 
-function makeNewRow (layer, resources, brickField, rowIndex) {
-    const currentLowestRow = brickField[0];
-    let lastTwoTypes = [];
-    const row = Array(FIELD_WIDTH).fill(null).map((na, index) => {
-        const bricksToUse = BRICK_VARIATIONS.filter((type) => {
-            // check above brick
-            if (currentLowestRow 
-                && currentLowestRow[index]
-                && currentLowestRow[index].type === type) {
-                return false;
-            }
-
-            // check we don't have three in a row
-            if (lastTwoTypes.length > 1 && lastTwoTypes.every((t) => t === type)) {
-                return false;
-            }
-
-            return true;
-        });
-        const type = bricksToUse[Math.floor(Math.random() * bricksToUse.length)];
-
-        if (lastTwoTypes.length > 1) {
-            lastTwoTypes.shift();
+    return new Promise((resolve) => {
+        if (leftBrick) {
+            waitForSwap.push(new Promise((resolve) => {
+                leftBrick.moveRight().then(() => resolve());
+            }));
         }
-        lastTwoTypes.push(type);
+        
+        if (rightBrick) {
+            waitForSwap.push(new Promise((resolve) => {
+                rightBrick.moveLeft().then(() => resolve());
+            }));
+        }
+    
+        Promise.all(waitForSwap).then(() => {
+            checkPatterns(
+                brickField,
+                brickField.findIndex((row) => row.brickRow === brickRow),
+                index
+            )
+                .then(() => resolve());
+        });
 
-        const brick = new Brick(type, resources[type].texture);
-
-        brick.sprite.x = index * (BRICK_SIZE + PADDING);
-        brick.sprite.y = rowIndex * (BRICK_SIZE + PADDING)
-
-        layer.addChild(brick.sprite);
-
-        return brick;
     });
-
-    brickField.unshift(row);
-
 }
 
 function init (pubsub, resources) {
     const layer = getRenderLayer('gameField');
     const brickField = [];
+    let gameIdle = true;
 
     // lets make 5 temp rows
-    Array(5).fill(null).map((na, index) => makeNewRow(
+    Array(15).fill(null).map((na, index) => makeNewRow(
         layer,
         resources,
         brickField,
-        index
+        index,
+        pubsub
     ));
+
+    // lets activate three rows
+    brickField.forEach((row, index) => {
+        if (index > 1) {
+            row.brickRow.forEach((brick) => brick.setState('idle'));
+        }
+    });
+
+    layer.y = 710 - 850;
+
+    pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
+        if (gameIdle) {
+            gameIdle = false;
+            swapBricks(brickRow, index, brickField).then(() => (gameIdle = true));
+        }
+    });
 }
 
 export default {
@@ -82,8 +88,10 @@ export default {
             return {
                 name: type,
                 url: `assets/brick${index}.png`
-            }
+            };
         });
+
+        assets.push({ name: 'arrow', url: 'assets/arrow.png' });
 
         return new Promise((resolve) => {
             loader.loadResources(assets).then((resources) => {
