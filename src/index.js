@@ -9,5 +9,5 @@ Promise.all([
     renderer.init(pubsub)
 ])
     .then(() => {
-        pubsub.publish('gameReady')
+        pubsub.publish('gameReady');
     });

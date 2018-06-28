@@ -10,6 +10,7 @@ const LAYERS = [
 ];
 
 const INTERACTIVE_LAYERS = [
+    'gameField'
 ];
 
 const renderLayers = {};
