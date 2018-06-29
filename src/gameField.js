@@ -109,14 +109,18 @@ function checkField (brickField) {
     // find all bricks that will fall
     const fallPromies = findFalling(brickField, result);
 
-    return Promise.all([
-        matchPromies,
-        fallPromies
-    ]).then(() => {
-        // if we had any matches or falls run checkField again
-        if (result.matches || result.falls) {
-            return checkField(brickField);
-        }
+    return new Promise((resolve) => {
+        Promise.all([
+            matchPromies,
+            fallPromies
+        ]).then(() => {
+            // if we had any matches or falls run checkField again
+            if (result.matches || result.falls) {
+                checkField(brickField).then(resolve);
+            } else {
+                resolve();
+            }
+        });
     });
 }
 
