@@ -95,15 +95,24 @@ export default function makeNewRow (
 
         layer.addChild(hitBox, arrow);
 
-        return hitBox;
+        return { hitBox, arrow };
     });
 
     const activateRow = () => {
         brickRow.forEach((brick) => brick.setState('idle'));
-        hitBoxRow.forEach((hitBox) => (hitBox.interactive = true));
+        hitBoxRow.forEach((slot) => (slot.hitBox.interactive = true));
+    };
+    
+    const destroy = () => {
+        brickRow.forEach((brick) => brick.destroy());
+        hitBoxRow.forEach((slot) => {
+            layer.removeChild(slot.hitBox, slot.arrow);
+            slot.hitBox.destroy();
+            slot.arrow.destroy();
+        });
     };
 
-    const row = { brickRow, hitBoxRow, activateRow };
+    const row = { brickRow, hitBoxRow, activateRow, destroy };
 
     brickField.unshift(row);
 

@@ -93,11 +93,25 @@ function findFalling (brickField, result) {
         });
     });
 
-    if (result.falls) {
-        // TODO: check if we should remove any rows
-    }
-
     return Promise.all(promises);
+}
+
+function checkEmptyRows (brickField) {
+    // TODO: check if we should remove any empty rows
+    const rowsForDel = brickField.reduce((acc, row) => {
+        const remove = row.brickRow.every((brick) => brick.type === 'destroyed');
+
+        if (remove) {
+            acc.push(row);
+        }
+
+        return acc;
+    }, []);
+
+    rowsForDel.forEach((row) => {
+        brickField.splice(brickField.indexOf(row), 1);
+        row.destroy();
+    });
 }
 
 function checkField (brickField) {
@@ -118,6 +132,7 @@ function checkField (brickField) {
         ]).then(() => {
             // if we had any matches or falls run checkField again
             if (result.matches || result.falls) {
+                checkEmptyRows(brickField);
                 checkField(brickField).then(resolve);
             } else {
                 resolve();
@@ -154,7 +169,7 @@ function swapBricks (brickRow, index, brickField) {
     });
 }
 
-function moveGameField (layer, { field }, pubsub) {
+function moveGameField (layer, { field }, pubsub, brickField) {
     const newTarget = field.targetPos - (field.newRowAtEvery / field.clicksPerRow);
 
     field.timeLine.clear().to(layer, 1, { y: newTarget, onUpdate: () => {
@@ -165,6 +180,8 @@ function moveGameField (layer, { field }, pubsub) {
             pubsub.publish('makeNewRow');
             pubsub.publish('activateRow');
             field.addedRows = diff;
+
+            checkField(brickField);
         }
     } });
 
@@ -180,13 +197,14 @@ function init (pubsub, resources) {
             targetPos: FIELD_START_POS,
             newRowAtEvery: ROW_HEIGHT,
             addedRows: 0,
+            startRows: 5,
             clicksPerRow: 5,
             timeLine: new TimelineLite()
         }
     };
 
     // lets make some initial rows
-    Array(5).fill(null).map((na, index) => makeNewRow(
+    Array(game.field.startRows).fill(null).map((na, index) => makeNewRow(
         layer,
         resources,
         brickField,
@@ -204,7 +222,13 @@ function init (pubsub, resources) {
     layer.y = game.field.targetPos;
 
     pubsub.subscribe('makeNewRow', () => {
-        makeNewRow(layer, resources, brickField, brickField.length, pubsub);
+        makeNewRow(
+            layer,
+            resources,
+            brickField,
+            game.field.startRows + game.field.addedRows,
+            pubsub
+        );
     });
     
     pubsub.subscribe('activateRow', () => {
@@ -215,7 +239,7 @@ function init (pubsub, resources) {
         if (game.idle) {
             game.idle = false;
             swapBricks(brickRow, index, brickField).then(() => (game.idle = true));
-            moveGameField(layer, game, pubsub);
+            moveGameField(layer, game, pubsub, brickField);
         }
     });
 }

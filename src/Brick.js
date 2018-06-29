@@ -77,6 +77,12 @@ export default class Brick {
         });
     }
 
+    destroy () {
+        this.sprite.parent.removeChild(this.sprite);
+        this.sprite.destroy();
+        this.pubsub = null;
+    }
+
     setState (newState) {
         if (STATES.includes(newState)) {
             const { sprite } = this;
