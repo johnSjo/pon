@@ -6,7 +6,8 @@ const STATES = [
     'idle',
     'selected',
     'moving',
-    'dying'
+    'dying',
+    'killed'
 ];
 
 const BRICK_SIZE = 80;
@@ -53,6 +54,28 @@ export default class Brick {
             } });
         });
     }
+  
+    moveDown (distans) {
+        this.setState('moving');
+        
+        return new Promise((resolve) => {
+            TweenLite.to(this.sprite, 0.3, { y: `+=${(BRICK_SIZE + PADDING) * distans}`, onComplete: () => {
+                this.setState('idle');
+                resolve();
+            } });
+        });
+    }
+    
+    kill () {
+        this.setState('dying');
+
+        return new Promise((resolve) => {
+            TweenLite.to(this.sprite, 0.3, { alpha: 0, onComplete: () => {
+                this.setState('killed');
+                resolve();
+            } });
+        });
+    }
 
     setState (newState) {
         if (STATES.includes(newState)) {
@@ -77,6 +100,10 @@ export default class Brick {
                     sprite.interactive = false;
                     // kill animation
                     // destroy Brick object
+                    break;
+                case 'killed':
+                    sprite.visible = false;
+                    this.type = 'destroyed';
                     break;
             }
 
