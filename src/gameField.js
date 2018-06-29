@@ -10,8 +10,13 @@
 import loader from './assetsLoader';
 import { getRenderLayer } from './renderer';
 import makeNewRow from './brickRow';
+import { TimelineLite } from 'gsap';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
+const BRICK_VARIATIONS = ['box', 'crate', 'ice'];//, 'green', 'blue'];
+
+const ROW_HEIGHT = 85;
+
+const FIELD_START_POS = 710;
 
 function findMatches (brickField, result) {
     const promises = [];
@@ -95,6 +100,10 @@ function findFalling (brickField, result) {
         });
     });
 
+    if (result.falls) {
+        // TODO: check if we should remove any rows
+    }
+
     return Promise.all(promises);
 }
 
@@ -152,15 +161,39 @@ function swapBricks (brickRow, index, brickField) {
     });
 }
 
+function moveGameField (layer, { field }, pubsub) {
+    const newTarget = field.targetPos - (field.newRowAtEvery / field.clicksPerRow);
+
+    field.timeLine.clear().to(layer, 1, { y: newTarget, onUpdate: () => {
+        //check if we should insert a new row
+        const diff = Math.floor(-(layer.y - FIELD_START_POS) / ROW_HEIGHT);
+
+        if (diff > field.addedRows) {
+            pubsub.publish('makeNewRow');
+            pubsub.publish('activateRow');
+            field.addedRows = diff;
+        }
+    } });
+
+    field.targetPos = newTarget;
+}
+
 function init (pubsub, resources) {
     const layer = getRenderLayer('gameField');
     const brickField = [];
-    let gameIdle = true;
+    const game = {
+        idle: true,
+        field: {
+            targetPos: FIELD_START_POS,
+            newRowAtEvery: ROW_HEIGHT,
+            addedRows: 0,
+            clicksPerRow: 5,
+            timeLine: new TimelineLite()
+        }
+    };
 
-    const temp = 10;
-
-    // lets make some temp rows
-    Array(temp).fill(null).map((na, index) => makeNewRow(
+    // lets make some initial rows
+    Array(5).fill(null).map((na, index) => makeNewRow(
         layer,
         resources,
         brickField,
@@ -171,16 +204,25 @@ function init (pubsub, resources) {
     // lets activate all but two rows
     brickField.forEach((row, index) => {
         if (index > 1) {
-            row.brickRow.forEach((brick) => brick.setState('idle'));
+            row.activateRow();
         }
     });
 
-    layer.y = 710 - 5 * 85;
+    layer.y = game.field.targetPos;
+
+    pubsub.subscribe('makeNewRow', () => {
+        makeNewRow(layer, resources, brickField, brickField.length, pubsub);
+    });
+    
+    pubsub.subscribe('activateRow', () => {
+        brickField[2].activateRow();
+    });
 
     pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
-        if (gameIdle) {
-            gameIdle = false;
-            swapBricks(brickRow, index, brickField).then(() => (gameIdle = true));
+        if (game.idle) {
+            game.idle = false;
+            swapBricks(brickRow, index, brickField).then(() => (game.idle = true));
+            moveGameField(layer, game, pubsub);
         }
     });
 }

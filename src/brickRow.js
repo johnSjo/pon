@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import Brick from './Brick';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
+const BRICK_VARIATIONS = ['box', 'crate', 'ice'];//, 'green', 'blue'];
 
 const BRICK_SIZE = 80;
 
@@ -64,7 +64,7 @@ export default function makeNewRow (
         hitBox.drawRect(0, 0, width, height);
 
         hitBox.renderable = false;
-        hitBox.interactive = true;
+        hitBox.interactive = false;
         hitBox.buttonMode = true;
 
         hitBox.x = xPos + index * (BRICK_SIZE + PADDING);
@@ -94,9 +94,16 @@ export default function makeNewRow (
         });
 
         layer.addChild(hitBox, arrow);
+
+        return hitBox;
     });
 
-    const row = { brickRow, hitBoxRow };
+    const activateRow = () => {
+        brickRow.forEach((brick) => brick.setState('idle'));
+        hitBoxRow.forEach((hitBox) => (hitBox.interactive = true));
+    };
+
+    const row = { brickRow, hitBoxRow, activateRow };
 
     brickField.unshift(row);
 
