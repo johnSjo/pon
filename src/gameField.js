@@ -1,12 +1,3 @@
-
-
-// Things it need to do:
-    // move everything up
-    // keep track of where the bricks are
-        // if a row is empty -> remove it
-    // when a position becomes empty ->
-        // check if there are any bricks above that need to fall down
-
 import loader from './assetsLoader';
 import { getRenderLayer } from './renderer';
 import makeNewRow from './brickRow';
@@ -68,7 +59,9 @@ function findMatches (brickField, result) {
     });
 
     matches.forEach((brick) => {
-        promises.push(brick.kill());
+        if (brick.state === 'idle') {
+            promises.push(brick.kill());
+        }
     });
 
     return Promise.all(promises);

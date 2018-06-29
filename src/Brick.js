@@ -112,7 +112,4 @@ export default class Brick {
         }
     }
 
-    getState () {
-        return this.state;
-    }
 };
