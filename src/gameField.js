@@ -3,11 +3,15 @@ import { getRenderLayer } from './renderer';
 import makeNewRow from './brickRow';
 import { TimelineLite } from 'gsap';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice'];//, 'green', 'blue'];
+const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
 
 const ROW_HEIGHT = 85;
 
-const FIELD_START_POS = 710;
+const NR_OF_START_ROWS = 5;
+
+const CLICKS_PER_ROW = 5;
+
+const FIELD_START_POS = 710 + ROW_HEIGHT / CLICKS_PER_ROW;
 
 function findMatches (brickField, result) {
     const promises = [];
@@ -172,8 +176,8 @@ function swapBricks (brickRow, index, brickField) {
     });
 }
 
-function moveGameField (layer, { field }, pubsub, brickField) {
-    const newTarget = field.targetPos - (field.newRowAtEvery / field.clicksPerRow);
+function moveGameField (layer, field, pubsub, brickField) {
+    const newTarget = field.targetPos - (field.newRowAtEvery / CLICKS_PER_ROW);
 
     field.timeLine.clear().to(layer, 1, { y: newTarget, onUpdate: () => {
         //check if we should insert a new row
@@ -191,23 +195,14 @@ function moveGameField (layer, { field }, pubsub, brickField) {
     field.targetPos = newTarget;
 }
 
-function init (pubsub, resources) {
-    const layer = getRenderLayer('gameField');
-    const brickField = [];
-    const game = {
-        idle: true,
-        field: {
-            targetPos: FIELD_START_POS,
-            newRowAtEvery: ROW_HEIGHT,
-            addedRows: 0,
-            startRows: 5,
-            clicksPerRow: 5,
-            timeLine: new TimelineLite()
-        }
-    };
+function initField ({ layer, resources, brickField, pubsub, field }) {
+    // remove any old rows
+    brickField.forEach((row) => {
+        row.destroy();
+    });
 
     // lets make some initial rows
-    Array(game.field.startRows).fill(null).map((na, index) => makeNewRow(
+    Array(NR_OF_START_ROWS).fill(null).map((na, index) => makeNewRow(
         layer,
         resources,
         brickField,
@@ -222,14 +217,41 @@ function init (pubsub, resources) {
         }
     });
 
-    layer.y = game.field.targetPos;
+    // reset field position
+    layer.y = FIELD_START_POS + 700;
+
+    // reset field data
+    field.targetPos = FIELD_START_POS;
+    field.newRowAtEvery = ROW_HEIGHT;
+    field.addedRows = 0;
+    field.timeLine = new TimelineLite();
+
+    // move into position
+    moveGameField(layer, field, pubsub, brickField);
+
+}
+
+function init (pubsub, resources) {
+    const layer = getRenderLayer('gameField');
+    const brickField = [];
+    const game = {
+        idle: true,
+        layer,
+        resources,
+        brickField,
+        pubsub,
+        field: {}
+    };
+
+    // temp
+    initField(game);
 
     pubsub.subscribe('makeNewRow', () => {
         makeNewRow(
             layer,
             resources,
             brickField,
-            game.field.startRows + game.field.addedRows,
+            NR_OF_START_ROWS + game.field.addedRows,
             pubsub
         );
     });
@@ -238,11 +260,15 @@ function init (pubsub, resources) {
         brickField[2].activateRow();
     });
 
+    pubsub.subscribe('startNewGame', () => {
+        initField(game);
+    });
+
     pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
         if (game.idle) {
             game.idle = false;
             swapBricks(brickRow, index, brickField).then(() => (game.idle = true));
-            moveGameField(layer, game, pubsub, brickField);
+            moveGameField(layer, game.field, pubsub, brickField);
         }
     });
 }

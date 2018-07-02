@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import Brick from './Brick';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice'];//, 'green', 'blue'];
+const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
 
 const BRICK_SIZE = 80;
 
