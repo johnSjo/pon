@@ -67,7 +67,7 @@ function findMatches (brickField, result) {
     return Promise.all(promises);
 }
 
-function findFalling (brickField, result) {
+function findFalling (brickField, result = { falls: false }) {
     const promises = [];
 
     brickField[0].brickRow.forEach((na, colIndex) => {
@@ -97,7 +97,6 @@ function findFalling (brickField, result) {
 }
 
 function checkEmptyRows (brickField) {
-    // TODO: check if we should remove any empty rows
     const rowsForDel = brickField.reduce((acc, row) => {
         const remove = row.brickRow.every((brick) => brick.type === 'destroyed');
 
@@ -132,9 +131,9 @@ function checkField (brickField) {
         ]).then(() => {
             // if we had any matches or falls run checkField again
             if (result.matches || result.falls) {
-                checkEmptyRows(brickField);
                 checkField(brickField).then(resolve);
             } else {
+                checkEmptyRows(brickField);
                 resolve();
             }
         });
@@ -163,7 +162,11 @@ function swapBricks (brickRow, index, brickField) {
         }
     
         Promise.all(waitForSwap).then(() => {
-            checkField(brickField).then(() => resolve());
+
+            // we have an extra findFalling() here so we don't match a hanging brick
+            findFalling(brickField).then(() => {
+                checkField(brickField).then(() => resolve());
+            });
         });
 
     });
