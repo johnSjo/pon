@@ -1,5 +1,6 @@
 
 import * as PIXI from 'pixi.js';
+import { CRTFilter } from '@pixi/filter-crt';
 import gameConfig from './gameConfig.json';
 
 const CONTAINER_SELECTOR = '#game';
@@ -28,6 +29,8 @@ LAYERS.forEach((name) => {
     layer.interactiveChildren = INTERACTIVE_LAYERS.includes(name);
 
     stage.addChild(layer);
+
+    stage.filters = [new CRTFilter()];
 
 });
 
