@@ -42,7 +42,7 @@ export default function makeNewRow (
         }
         lastTwoTypes.push(type);
 
-        const brick = new Brick(type, resources[type].texture, pubsub);
+        const brick = new Brick(type, resources, pubsub);
 
         brick.sprite.x = index * (BRICK_SIZE + PADDING);
         brick.sprite.y = rowIndex * (BRICK_SIZE + PADDING);

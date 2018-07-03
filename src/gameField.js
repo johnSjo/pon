@@ -288,7 +288,10 @@ export default {
             };
         });
 
-        assets.push({ name: 'arrow', url: 'assets/arrow.png' });
+        assets.splice(0, 0, [
+            { name: 'arrow', url: 'assets/arrow.png' },
+            { name: 'explosion', url: 'assets/explosion.png' }
+        ]);
 
         return new Promise((resolve) => {
             loader.loadResources(assets).then((resources) => {
