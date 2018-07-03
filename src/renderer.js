@@ -8,6 +8,7 @@ const BASE_WIDTH = gameConfig.gameSize.x;
 const BASE_HEIGHT = gameConfig.gameSize.y;
 
 const LAYERS = [
+    'background',
     'gameField',
     'ui'
 ];

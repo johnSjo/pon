@@ -247,9 +247,6 @@ function init (pubsub, resources) {
         field: {}
     };
 
-    // temp
-    initField(game);
-
     pubsub.subscribe('makeNewRow', () => {
         makeNewRow(
             layer,
