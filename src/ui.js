@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AdvancedBloomFilter } from '@pixi/filter-advanced-bloom';
-import { TimelineMax } from 'gsap';
+import { TimelineMax, Back } from 'gsap';
 import { getRenderLayer } from './renderer';
 import loader from './assetsLoader';
 import gameConfig from './gameConfig.json';
@@ -20,7 +20,7 @@ function initScoreBoard (layer) {
 function initStartButton (layer, pubsub) {
     const button = new PIXI.Text('Start', {
         fontFamily: 'PressStart2P',
-        fill: ['#ef2f22', '#de1f11'],
+        fill: ['#4866c5', '#429ad7'],
         fontSize: 60,
         align: 'center',
         lineJoin: 'miter',
@@ -50,7 +50,7 @@ function initStartButton (layer, pubsub) {
         pubsub.publish('startNewGame');
 
         button.scale = { x: 1, y: 1 };
-        TweenLite.to(button, 0.5, { x: '-=800', onComplete: () => {
+        TweenLite.to(button, 0.5, { x: '-=800', ease: Back.easeIn.config(1.7), onComplete: () => {
             button.visible = false;
             bloomAnimation.pause();
         } });
@@ -76,24 +76,65 @@ function initStartButton (layer, pubsub) {
 
     button.bloomAnimation = bloomAnimation;
 
-    return button;
+    pubsub.subscribe('gameOver/done', () => {
+        button.visible = true;
+        button.bloomAnimation.play();
+        TweenLite.to(button, 0.5, { x: '+=800', ease: Back.easeOut.config(1.7) });
+    });
 
+}
+
+function initGameOverSign (layer, pubsub) {
+    const text = new PIXI.Text('GAME OVER', {
+        fontFamily: 'PressStart2P',
+        fill: ['#ef2f22', '#de1f11'],
+        fontSize: 80,
+        align: 'center',
+        lineJoin: 'miter',
+        fontWeight: 'bold',
+        stroke: '#580903',
+        strokeThickness: 9,
+        dropShadow: true,
+        dropShadowAngle: Math.PI * 0.4,
+        dropShadowColor: '#292121',
+        dropShadowDistance: 7.5
+    });
+
+    text.anchor = new PIXI.Point(0.5, 0.5);
+    text.scale.x = 0.8;
+    text.x = gameConfig.gameSize.x * 0.5;
+    text.y = -300;
+    text.visible = false;
+
+    layer.addChild(text);
+
+    pubsub.subscribe('gameOver', () => {
+        // show 'game over' sign
+        text.visible = true;
+
+        TweenLite.to(text, 2, { y: gameConfig.gameSize.y * 0.75, onComplete: () => {
+            pubsub.publish('gameOver/done');
+        } });
+
+    });
+
+    pubsub.subscribe('startNewGame', () => {
+        if (text.visible) {
+            TweenLite.to(text, 1, { y: gameConfig.gameSize.y * 1.2, onComplete: () => {
+                text.visible = false;
+                text.y = -300;
+            } });
+        }
+    });
 }
 
 function init (pubsub, resources) {
     const layer = getRenderLayer('ui');
 
-    const startButton = initStartButton(layer, pubsub);
-
+    initStartButton(layer, pubsub);
+    initGameOverSign(layer, pubsub);
     initFrame(layer, resources);
-    
     initScoreBoard(layer);
-
-    pubsub.subscribe('gameOver/done', () => {
-        startButton.visible = true;
-        startButton.bloomAnimation.play();
-        TweenLite.to(startButton, 0.5, { x: '+=800' });
-    });
 }
 
 export default {

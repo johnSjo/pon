@@ -1,7 +1,7 @@
 import loader from './assetsLoader';
 import { getRenderLayer } from './renderer';
 import makeNewRow from './brickRow';
-import { TimelineLite } from 'gsap';
+import { TimelineLite, TweenLite, Power4 } from 'gsap';
 import gameConfig from './gameConfig.json';
 
 const BRICK_VARIATIONS = gameConfig.brickVariations;
@@ -147,7 +147,7 @@ function checkField (brickField) {
     });
 }
 
-function swapBricks (brickRow, index, brickField) {
+function swapBricks (brickRow, index, brickField, pubsub) {
     const leftBrick = brickRow[index];
     const rightBrick = brickRow[index + 1];
     const waitForSwap = [];
@@ -172,7 +172,17 @@ function swapBricks (brickRow, index, brickField) {
 
             // we have an extra findFalling() here so we don't match a hanging brick
             findFalling(brickField).then(() => {
-                checkField(brickField).then(() => resolve());
+                checkField(brickField).then(() => {
+                    // check if game over
+                    const brick = brickField[brickField.length - 1].brickRow
+                        .find((brick) => brick.type !== 'destroyed');
+
+                    if (brick && brick.sprite.getGlobalPosition().y < 45) {
+                        pubsub.publish('gameOver');
+                    }
+
+                    resolve();
+                });
             });
         });
 
@@ -199,40 +209,92 @@ function moveGameField (layer, field, pubsub, brickField) {
 }
 
 function initField ({ layer, resources, brickField, pubsub, field }) {
+    const killPromises = [];
+
     // remove any old rows
-    brickField.forEach((row) => {
-        row.destroy();
+    if (brickField.length > 0) {
+
+        brickField[0].brickRow.forEach((na, colIndex) => {
+            const colum = brickField.map((row) => row.brickRow[colIndex]);
+    
+            colum.forEach((brick, index) => {
+                if (brick.type !== 'destroyed') {
+                    killPromises.push(new Promise((resolve) => {
+
+                        TweenLite.to(brick.sprite, 0.5, {
+                            y: `+=${80 + index * 80}`,
+                            ease: Power4.easeIn,
+                            delay: index * 0.1 + colIndex * 0.1,
+                            onComplete: resolve
+                        });
+                    }));
+                }
+            });
+        });
+
+    }
+
+    Promise.all(killPromises).then(() => {
+        brickField.forEach((row) => {
+            row.destroy();
+        });
+    
+        brickField.length = 0;
+
+        // lets make some initial rows
+        Array(NR_OF_START_ROWS).fill(null).map((na, index) => makeNewRow(
+            layer,
+            resources,
+            brickField,
+            index,
+            pubsub
+        ));
+    
+        // lets activate all but two rows
+        brickField.forEach((row, index) => {
+            if (index > 1) {
+                row.activateRow();
+            }
+        });
+    
+        // reset field position
+        layer.y = FIELD_START_POS + 700;
+        layer.x = FIELD_X_POS;
+    
+        // reset field data
+        field.targetPos = FIELD_START_POS;
+        field.newRowAtEvery = ROW_HEIGHT;
+        field.addedRows = 0;
+        field.timeLine = new TimelineLite();
+    
+        // move into position
+        moveGameField(layer, field, pubsub, brickField);
     });
 
-    // lets make some initial rows
-    Array(NR_OF_START_ROWS).fill(null).map((na, index) => makeNewRow(
-        layer,
-        resources,
-        brickField,
-        index,
-        pubsub
-    ));
+}
 
-    // lets activate all but two rows
-    brickField.forEach((row, index) => {
-        if (index > 1) {
-            row.activateRow();
-        }
+function gameOver (brickField) {
+    brickField.reverse().forEach((row, index) => {
+        row.hitBoxRow.forEach((slot) => {
+            slot.hitBox.interactive = false;
+            slot.arrow.visible = false;
+        });
+
+        const yTarget = brickField.length * 15 - index * 15;
+
+        row.brickRow.forEach((brick) => {
+            TweenLite.to(brick.sprite, 0.3, {
+                rotation: 0.05 - Math.random() * 0.1,
+                y: `+=${yTarget}`,
+                delay: index * 0.1,
+                onStart: () => {
+                    brick.detonateExplotion();
+                }
+            });
+        });
     });
 
-    // reset field position
-    layer.y = FIELD_START_POS + 700;
-    layer.x = FIELD_X_POS;
-
-    // reset field data
-    field.targetPos = FIELD_START_POS;
-    field.newRowAtEvery = ROW_HEIGHT;
-    field.addedRows = 0;
-    field.timeLine = new TimelineLite();
-
-    // move into position
-    moveGameField(layer, field, pubsub, brickField);
-
+    brickField.reverse();
 }
 
 function init (pubsub, resources) {
@@ -265,10 +327,14 @@ function init (pubsub, resources) {
         initField(game);
     });
 
+    pubsub.subscribe('gameOver', () => {
+        gameOver(brickField);
+    });
+
     pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
         if (game.idle) {
             game.idle = false;
-            swapBricks(brickRow, index, brickField).then(() => (game.idle = true));
+            swapBricks(brickRow, index, brickField, pubsub).then(() => (game.idle = true));
             moveGameField(layer, game.field, pubsub, brickField);
         }
     });
