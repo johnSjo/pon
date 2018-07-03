@@ -1,13 +1,14 @@
 import * as PIXI from 'pixi.js';
 import Brick from './Brick';
+import gameConfig from './gameConfig.json';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
+const BRICK_VARIATIONS = gameConfig.brickVariations;
 
-const BRICK_SIZE = 80;
+const BRICK_SIZE = gameConfig.brickSize;
 
-const PADDING = 5;
+const PADDING = gameConfig.brickPadding;
 
-const FIELD_WIDTH = 8;
+const FIELD_WIDTH = gameConfig.bricksPerRow;
 
 export default function makeNewRow (
     layer,

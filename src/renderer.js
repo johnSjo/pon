@@ -1,9 +1,10 @@
 
 import * as PIXI from 'pixi.js';
+import gameConfig from './gameConfig.json';
 
 const CONTAINER_SELECTOR = '#game';
-const BASE_WIDTH = 728;
-const BASE_HEIGHT = 1050;
+const BASE_WIDTH = gameConfig.gameSize.x;
+const BASE_HEIGHT = gameConfig.gameSize.y;
 
 const LAYERS = [
     'gameField'

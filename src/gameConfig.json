@@ -1,0 +1,10 @@
+{
+    "brickVariations": ["box", "crate", "ice", "green", "blue"],
+    "bricksPerRow": 8,
+    "brickSize": 80,
+    "brickPadding": 5,
+    "gameSize": {
+        "x": 775,
+        "y": 1050
+    }
+}

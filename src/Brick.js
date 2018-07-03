@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { TweenLite } from 'gsap';
+import gameConfig from './gameConfig.json';
 
 const STATES = [
     'inactive',
@@ -10,9 +11,9 @@ const STATES = [
     'killed'
 ];
 
-const BRICK_SIZE = 80;
+const BRICK_SIZE = gameConfig.brickSize;
 
-const PADDING = 5;
+const PADDING = gameConfig.brickPadding;
 
 function initSprite (texture) {
     const sprite = new PIXI.Sprite(texture);

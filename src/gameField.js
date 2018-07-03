@@ -2,16 +2,19 @@ import loader from './assetsLoader';
 import { getRenderLayer } from './renderer';
 import makeNewRow from './brickRow';
 import { TimelineLite } from 'gsap';
+import gameConfig from './gameConfig.json';
 
-const BRICK_VARIATIONS = ['box', 'crate', 'ice', 'green', 'blue'];
+const BRICK_VARIATIONS = gameConfig.brickVariations;
 
-const ROW_HEIGHT = 85;
+const ROW_HEIGHT = gameConfig.brickSize + gameConfig.brickPadding;
 
 const NR_OF_START_ROWS = 5;
 
 const CLICKS_PER_ROW = 5;
 
-const FIELD_START_POS = 710 + ROW_HEIGHT / CLICKS_PER_ROW;
+const FIELD_START_POS = 560 + ROW_HEIGHT / CLICKS_PER_ROW;
+
+const FIELD_X_POS = 50;
 
 function findMatches (brickField, result) {
     const promises = [];
@@ -219,6 +222,7 @@ function initField ({ layer, resources, brickField, pubsub, field }) {
 
     // reset field position
     layer.y = FIELD_START_POS + 700;
+    layer.x = FIELD_X_POS;
 
     // reset field data
     field.targetPos = FIELD_START_POS;
