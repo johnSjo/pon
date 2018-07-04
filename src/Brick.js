@@ -98,9 +98,15 @@ export default class Brick {
         this.setState('dying');
 
         return new Promise((resolve) => {
-            this.detonateExplotion();
+            const { sprite } = this;
 
-            TweenLite.to(this.sprite, 0.2, { alpha: 0, onComplete: () => {
+            this.detonateExplotion();
+            this.pubsub.publish('coinWin', {
+                x: sprite.x + sprite.width * 0.5,
+                y: sprite.y + sprite.height * 0.5
+            });
+
+            TweenLite.to(sprite, 0.2, { alpha: 0, onComplete: () => {
                 this.setState('killed');
                 resolve();
             } });
