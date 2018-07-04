@@ -99,11 +99,12 @@ export default class Brick {
 
         return new Promise((resolve) => {
             const { sprite } = this;
+            const spritePos = sprite.getGlobalPosition();
 
             this.detonateExplotion();
             this.pubsub.publish('coinWin', {
-                x: sprite.x + sprite.width * 0.5,
-                y: sprite.y + sprite.height * 0.5
+                x: spritePos.x + sprite.width * 0.5,
+                y: spritePos.y + sprite.height * 0.5
             });
 
             TweenLite.to(sprite, 0.2, { alpha: 0, onComplete: () => {

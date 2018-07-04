@@ -13,8 +13,51 @@ function initFrame (layer, resources) {
     layer.addChild(frame);
 }
 
-function initScoreBoard (layer) {
+function initScoreBoard (layer, pubsub) {
+    const style = {
+        fontFamily: 'PressStart2P',
+        fill: ['#ef2f22', '#de1f11'],
+        fontSize: 50,
+        align: 'center',
+        lineJoin: 'miter',
+        fontWeight: 'bold',
+        stroke: '#580903',
+        strokeThickness: 3,
+        dropShadow: true,
+        dropShadowAngle: Math.PI * 0.4,
+        dropShadowColor: '#292121',
+        dropShadowDistance: 2.5
+    };
+    const numbersStyle = {
+        ...style,
+        fill: ['0xffcf40', '0xffbf00', '0xbf9b30'],
+        fontSize: 70,
+        stroke: '0xa67c00',
+        dropShadow: false
+    };
+    
+    const string = new PIXI.Text('Score:', style);
+    const score = new PIXI.Text(0, numbersStyle);
 
+    score.anchor = new PIXI.Point(0, 0.5);
+    score.x = gameConfig.gameSize.x * 0.5;
+    score.y = gameConfig.gameSize.y - 50;
+    
+    string.anchor = new PIXI.Point(1, 0.5);
+    string.x = gameConfig.gameSize.x * 0.5;
+    string.y = gameConfig.gameSize.y - 50;
+
+    layer.addChild(score, string);
+
+    pubsub.subscribe('startNewGame', () => {
+        // TODO: add animation
+        score.text = 0;
+    });
+
+    pubsub.subscribe('coinCollected', (value) => {
+        // TODO: add animation
+        score.text = parseInt(score.text, 10) + value;
+    });
 }
 
 function initStartButton (layer, pubsub) {
@@ -134,7 +177,7 @@ function init (pubsub, resources) {
     initStartButton(layer, pubsub);
     initGameOverSign(layer, pubsub);
     initFrame(layer, resources);
-    initScoreBoard(layer);
+    initScoreBoard(layer, pubsub);
 }
 
 export default {

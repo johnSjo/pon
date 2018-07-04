@@ -4,9 +4,9 @@ import { getRenderLayer } from './renderer';
 import { TimelineLite, Back } from 'gsap';
 import gameConfig from './gameConfig.json';
 
-const TO_POS = { x: gameConfig.gameSize.x * 0.5, y: gameConfig.gameSize.y - 200 };
+const TO_POS = { x: gameConfig.gameSize.x * 0.5, y: gameConfig.gameSize.y - 50 };
 
-function throwCoin (fromPos, layer, texture) {
+function throwCoin (fromPos, layer, texture, pubsub) {
     const coin = new PIXI.extras.AnimatedSprite(texture);
     const timeline = new TimelineLite();
 
@@ -23,16 +23,17 @@ function throwCoin (fromPos, layer, texture) {
     timeline.delay(Math.random() * 0.3 + 0.2)
         .to(coin.scale, 0.3, { x: 6, y: 6, ease: Back.easeOut.config(3) })
         .to(coin.scale, 1, { x: 4, y: 4 })
-        .to(coin, 2, { x: TO_POS.x, y: TO_POS.y, onComplete: () => {
+        .to(coin, 0.5, { x: TO_POS.x, y: TO_POS.y, onComplete: () => {
             layer.removeChild(coin);
             coin.destroy();
+            pubsub.publish('coinCollected', 1);
         } });
 
     layer.addChild(coin);
 }
 
 function init (pubsub, resources) {
-    const layer = getRenderLayer('gameField');
+    const layer = getRenderLayer('winPresentation');
     const coinTexture = Array(4).fill(null).map((na, frame) => {
         const { texture } = resources.coin;
         const frameSize = {
@@ -46,7 +47,7 @@ function init (pubsub, resources) {
     });
 
     pubsub.subscribe('coinWin', (data) => {
-        throwCoin(data, layer, coinTexture);
+        throwCoin(data, layer, coinTexture, pubsub);
     });
 }
 
