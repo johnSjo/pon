@@ -333,6 +333,7 @@ function init (pubsub, resources) {
 
     pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
         if (game.idle) {
+            pubsub.publish('sound/swapBricks');
             game.idle = false;
             swapBricks(brickRow, index, brickField, pubsub).then(() => (game.idle = true));
             moveGameField(layer, game.field, pubsub, brickField);

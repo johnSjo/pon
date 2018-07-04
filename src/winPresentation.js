@@ -21,7 +21,9 @@ function throwCoin (fromPos, layer, texture, pubsub) {
     });
 
     timeline.delay(Math.random() * 0.3 + 0.2)
-        .to(coin.scale, 0.3, { x: 6, y: 6, ease: Back.easeOut.config(3) })
+        .to(coin.scale, 0.3, { x: 6, y: 6, ease: Back.easeOut.config(3), onStart: () => {
+            pubsub.publish('sound/coinAppear');
+        } })
         .to(coin.scale, 1, { x: 4, y: 4 })
         .to(coin, 0.5, { x: TO_POS.x, y: TO_POS.y, onComplete: () => {
             layer.removeChild(coin);

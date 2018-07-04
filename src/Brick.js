@@ -122,6 +122,7 @@ export default class Brick {
         this.explosion.y = this.sprite.y + this.sprite.height * 0.5;
 
         this.explosion.play();
+        this.pubsub.publish('sound/explosion');
     }
 
     destroy () {
