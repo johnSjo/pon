@@ -10,6 +10,7 @@ const BASE_HEIGHT = gameConfig.gameSize.y;
 const LAYERS = [
     'background',
     'gameField',
+    'winPresentation',
     'ui'
 ];
 
