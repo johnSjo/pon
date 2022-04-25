@@ -1,21 +1,15 @@
-
 import * as PIXI from 'pixi.js';
 
 export default {
+  loadResources(assets) {
+    return new Promise((resolve) => {
+      const loader = new PIXI.Loader();
 
-    loadResources (assets) {
-        return new Promise((resolve) => {
+      loader.add(assets);
 
-            const loader = new PIXI.loaders.Loader();
+      loader.load();
 
-            loader.add(assets);
-
-            loader.load();
-
-            loader.once('complete', () => {
-                resolve(loader.resources);
-            });
-        });
-    }
-
+      loader.onComplete.once(() => resolve(loader.resources));
+    });
+  },
 };

@@ -13,13 +13,12 @@ import winPresentation from './winPresentation';
 const pubsub = PubSub.create();
 
 Promise.all([
-    audio.init(pubsub),
-    background.init(),
-    gameField.init(pubsub),
-    renderer.init(pubsub),
-    ui.init(pubsub),
-    winPresentation.init(pubsub)
-])
-    .then(() => {
-        pubsub.publish('gameReady');
-    });
+  audio.init(pubsub),
+  background.init(),
+  gameField.init(pubsub),
+  renderer.init(pubsub),
+  ui.init(pubsub),
+  winPresentation.init(pubsub),
+]).then(() => {
+  pubsub.publish('gameReady');
+});
