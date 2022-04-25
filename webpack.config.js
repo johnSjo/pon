@@ -15,7 +15,7 @@ module.exports = {
       directory: `${__dirname}/src`,
     },
     compress: true,
-    port: 9000,
+    port: 9001,
   },
   mode: 'development',
   devtool: 'source-map',
