@@ -3,7 +3,7 @@
 module.exports = {
   context: `${__dirname}/src`,
   entry: {
-    index: './index.js',
+    index: './index.ts',
   },
   output: {
     filename: '[name].js',
@@ -18,5 +18,17 @@ module.exports = {
     port: 9001,
   },
   mode: 'development',
-  devtool: 'source-map',
+  devtool: 'inline-source-map',
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
 };

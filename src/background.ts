@@ -2,8 +2,9 @@ import * as PIXI from 'pixi.js';
 import { gsap } from 'gsap';
 import { getRenderLayer } from './renderer';
 import loader from './assetsLoader';
+import { IAddOptions, ILoaderAdd } from 'pixi.js';
 
-function init(resources) {
+function init(resources: PIXI.utils.Dict<PIXI.LoaderResource>) {
   const layer = getRenderLayer('background');
 
   const backgrounds = Array(4)
@@ -11,9 +12,8 @@ function init(resources) {
     .map((na, index) => {
       const bg = new PIXI.Sprite(resources[`background${index}`].texture);
 
-      bg.scale = new PIXI.Point(5, 5);
-      bg.x = 40;
-      bg.y = 40;
+      bg.scale.set(5, 5);
+      bg.position.set(40, 40);
 
       layer.addChild(bg);
 
@@ -33,14 +33,14 @@ function init(resources) {
 
 export default {
   init() {
-    const assets = [
+    const assets: IAddOptions[] = [
       { name: 'background0', url: 'assets/images/background0.png' },
       { name: 'background1', url: 'assets/images/background1.png' },
       { name: 'background2', url: 'assets/images/background2.png' },
       { name: 'background3', url: 'assets/images/background3.png' },
     ];
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       loader.loadResources(assets).then((resources) => {
         init(resources);
         resolve();

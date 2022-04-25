@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
-import Brick from './Brick';
+import Brick, { BrickState } from './Brick';
 import gameConfig from './gameConfig.json';
+import { Game } from './gameField';
+import PubSub from './PubSub';
 
 const BRICK_VARIATIONS = gameConfig.brickVariations;
 
@@ -10,13 +12,17 @@ const PADDING = gameConfig.brickPadding;
 
 const FIELD_WIDTH = gameConfig.bricksPerRow;
 
-export default function makeNewRow(
+interface MakeNewRowConfig
+  extends Pick<Game, 'layer' | 'resources' | 'brickField'> {
+  readonly rowIndex: number;
+}
+
+export default function makeNewRow({
   layer,
   resources,
   brickField,
   rowIndex,
-  pubsub
-) {
+}: MakeNewRowConfig) {
   const currentLowestRow = brickField[0] ? brickField[0].brickRow : null;
   let lastTwoTypes = [];
   const brickRow = Array(FIELD_WIDTH)
@@ -46,7 +52,7 @@ export default function makeNewRow(
       }
       lastTwoTypes.push(type);
 
-      const brick = new Brick(type, resources, pubsub);
+      const brick = new Brick(type, resources);
 
       brick.sprite.x = index * (BRICK_SIZE + PADDING);
       brick.sprite.y = rowIndex * (BRICK_SIZE + PADDING);
@@ -80,8 +86,8 @@ export default function makeNewRow(
       const arrow = new PIXI.Sprite(resources.arrow.texture);
 
       arrow.visible = false;
-      arrow.scale = new PIXI.Point(4, 4);
-      arrow.anchor = new PIXI.Point(0.5, 0.5);
+      arrow.scale.set(4, 4);
+      arrow.anchor.set(0.5, 0.5);
       arrow.x = (BRICK_SIZE + PADDING) * index + BRICK_SIZE + PADDING * 0.5;
       arrow.y = hitBox.y + (BRICK_SIZE + PADDING) * 0.5;
 
@@ -95,7 +101,7 @@ export default function makeNewRow(
 
       hitBox.on('pointertap', () => {
         if (brickRow[index] || brickRow[index + 1]) {
-          pubsub.publish('swapBricks', { brickRow, index });
+          PubSub.publish('swapBricks', { brickRow, index });
         }
       });
 
@@ -105,7 +111,7 @@ export default function makeNewRow(
     });
 
   const activateRow = () => {
-    brickRow.forEach((brick) => brick.setState('idle'));
+    brickRow.forEach((brick) => brick.setState(BrickState.IDLE));
     hitBoxRow.forEach((slot) => (slot.hitBox.interactive = true));
   };
 

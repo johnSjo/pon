@@ -10,15 +10,13 @@ import renderer from './renderer';
 import ui from './ui';
 import winPresentation from './winPresentation';
 
-const pubsub = PubSub.create();
-
 Promise.all([
-  audio.init(pubsub),
+  audio.init(),
   background.init(),
-  gameField.init(pubsub),
-  renderer.init(pubsub),
-  ui.init(pubsub),
-  winPresentation.init(pubsub),
+  gameField.init(),
+  renderer.init(),
+  ui.init(),
+  winPresentation.init(),
 ]).then(() => {
-  pubsub.publish('gameReady');
+  PubSub.publish('gameReady');
 });
