@@ -1,8 +1,11 @@
+import { gsap, Power4 } from 'gsap';
+import * as PIXI from 'pixi.js';
 import loader from './assetsLoader';
-import { getRenderLayer } from './renderer';
+import Brick from './Brick';
 import makeNewRow from './brickRow';
-import { Power4, gsap } from 'gsap';
 import gameConfig from './gameConfig.json';
+import PubSub from './PubSub';
+import { getRenderLayer } from './renderer';
 
 const BRICK_VARIATIONS = gameConfig.brickVariations;
 
@@ -76,7 +79,7 @@ function findMatches(brickField, result) {
 }
 
 function findFalling(brickField, result = { falls: false }) {
-  const promises = [];
+  const promises: Promise<void>[] = [];
 
   brickField[0].brickRow.forEach((na, colIndex) => {
     const colum = brickField.map((row) => row.brickRow[colIndex]);
@@ -141,7 +144,7 @@ function checkField(brickField) {
   // find all bricks that will fall
   const fallPromies = findFalling(brickField, result);
 
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     Promise.all([matchPromies, fallPromies]).then(() => {
       // if we had any matches or falls run checkField again
       if (result.matches || result.falls) {
@@ -154,7 +157,7 @@ function checkField(brickField) {
   });
 }
 
-function swapBricks(brickRow, index, brickField, pubsub) {
+function swapBricks(brickRow, index, brickField) {
   const leftBrick = brickRow[index];
   const rightBrick = brickRow[index + 1];
   const waitForSwap = [];
@@ -167,7 +170,7 @@ function swapBricks(brickRow, index, brickField, pubsub) {
   return new Promise((resolve) => {
     if (leftBrick) {
       waitForSwap.push(
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           leftBrick.moveRight().then(() => resolve());
         })
       );
@@ -175,7 +178,7 @@ function swapBricks(brickRow, index, brickField, pubsub) {
 
     if (rightBrick) {
       waitForSwap.push(
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           rightBrick.moveLeft().then(() => resolve());
         })
       );
@@ -191,17 +194,17 @@ function swapBricks(brickRow, index, brickField, pubsub) {
           );
 
           if (brick && brick.sprite.getGlobalPosition().y < 45) {
-            pubsub.publish('gameOver');
+            PubSub.publish('gameOver');
           }
 
-          resolve();
+          resolve(undefined);
         });
       });
     });
   });
 }
 
-function moveGameField(layer, field, pubsub, brickField) {
+function moveGameField(layer, field, brickField) {
   const newTarget = field.targetPos - field.newRowAtEvery / CLICKS_PER_ROW;
 
   field.timeLine.clear().to(layer, 1, {
@@ -211,8 +214,8 @@ function moveGameField(layer, field, pubsub, brickField) {
       const diff = Math.floor(-(layer.y - FIELD_START_POS) / ROW_HEIGHT);
 
       if (diff > field.addedRows) {
-        pubsub.publish('makeNewRow');
-        pubsub.publish('activateRow');
+        PubSub.publish('makeNewRow');
+        PubSub.publish('activateRow');
         field.addedRows = diff;
 
         checkField(brickField);
@@ -223,7 +226,7 @@ function moveGameField(layer, field, pubsub, brickField) {
   field.targetPos = newTarget;
 }
 
-function initField({ layer, resources, brickField, pubsub, field }) {
+function initField({ layer, resources, brickField, field }) {
   const killPromises = [];
 
   // remove any old rows
@@ -260,7 +263,7 @@ function initField({ layer, resources, brickField, pubsub, field }) {
     Array(NR_OF_START_ROWS)
       .fill(null)
       .map((na, index) =>
-        makeNewRow(layer, resources, brickField, index, pubsub)
+        makeNewRow({ layer, resources, brickField, rowIndex: index })
       );
 
     // lets activate all but two rows
@@ -281,11 +284,11 @@ function initField({ layer, resources, brickField, pubsub, field }) {
     field.timeLine = gsap.timeline();
 
     // move into position
-    moveGameField(layer, field, pubsub, brickField);
+    moveGameField(layer, field, brickField);
   });
 }
 
-function gameOver(brickField) {
+function gameOver({ brickField }: Game) {
   brickField.reverse().forEach((row, index) => {
     row.hitBoxRow.forEach((slot) => {
       slot.hitBox.interactive = false;
@@ -310,54 +313,75 @@ function gameOver(brickField) {
   brickField.reverse();
 }
 
-function init(pubsub, resources) {
+interface HitBoxRow {
+  readonly hitBox: PIXI.Graphics;
+  readonly arrow: PIXI.Sprite;
+}
+
+interface BrickField {
+  readonly brickRow: Brick[];
+  readonly hitBoxRow: HitBoxRow[];
+  readonly activateRow: () => void;
+  readonly destroy: () => void;
+}
+
+interface Field {
+  readonly addedRows: number;
+}
+
+export interface Game {
+  readonly layer: PIXI.Container;
+  readonly resources: PIXI.utils.Dict<PIXI.LoaderResource>;
+  readonly brickField: BrickField[]; // TODO: set correct array type
+  readonly field: Field;
+  idle: boolean;
+}
+
+function init(resources: PIXI.utils.Dict<PIXI.LoaderResource>) {
   const layer = getRenderLayer('gameField');
-  const brickField = [];
-  const game = {
+  const game: Game = {
     idle: true,
     layer,
     resources,
-    brickField,
-    pubsub,
-    field: {},
+    brickField: [],
+    field: {
+      addedRows: 0,
+    },
   };
 
-  pubsub.subscribe('makeNewRow', () => {
-    makeNewRow(
-      layer,
-      resources,
-      brickField,
-      NR_OF_START_ROWS + game.field.addedRows,
-      pubsub
-    );
+  PubSub.subscribe('makeNewRow', () => {
+    makeNewRow({ ...game, rowIndex: NR_OF_START_ROWS + game.field.addedRows });
   });
 
-  pubsub.subscribe('activateRow', () => {
-    brickField[2].activateRow();
+  PubSub.subscribe('activateRow', () => {
+    const row = game.brickField[2];
+    if (row !== undefined) {
+      row.activateRow();
+    }
   });
 
-  pubsub.subscribe('startNewGame', () => {
+  PubSub.subscribe('startNewGame', () => {
     initField(game);
   });
 
-  pubsub.subscribe('gameOver', () => {
-    gameOver(brickField);
+  PubSub.subscribe('gameOver', () => {
+    gameOver(game);
   });
 
-  pubsub.subscribe('swapBricks', ({ brickRow, index }) => {
+  PubSub.subscribe('swapBricks', ({ brickRow, index }) => {
     if (game.idle) {
-      pubsub.publish('sound/swapBricks');
+      PubSub.publish('sound/swapBricks');
       game.idle = false;
-      swapBricks(brickRow, index, brickField, pubsub).then(
+      swapBricks(brickRow, index, game.brickField).then(
         () => (game.idle = true)
       );
-      moveGameField(layer, game.field, pubsub, brickField);
+      moveGameField(layer, game.field, game.brickField);
     }
   });
 }
 
 export default {
-  init(pubsub) {
+  init() {
     const assets = BRICK_VARIATIONS.map((type, index) => {
       return {
         name: type,
@@ -365,16 +389,17 @@ export default {
       };
     });
 
-    assets.splice(0, 0, [
-      { name: 'arrow', url: 'assets/images/arrow.png' },
-      { name: 'explosion', url: 'assets/images/explosion.png' },
-    ]);
-
-    return new Promise((resolve) => {
-      loader.loadResources(assets).then((resources) => {
-        init(pubsub, resources);
-        resolve();
-      });
+    return new Promise<void>((resolve) => {
+      loader
+        .loadResources([
+          { name: 'arrow', url: 'assets/images/arrow.png' },
+          { name: 'explosion', url: 'assets/images/explosion.png' },
+          ...assets,
+        ])
+        .then((resources) => {
+          init(resources);
+          resolve();
+        });
     });
   },
 };

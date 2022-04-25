@@ -4,17 +4,19 @@ import { Back, gsap } from 'gsap';
 import { getRenderLayer } from './renderer';
 import loader from './assetsLoader';
 import gameConfig from './gameConfig.json';
+import { ITextStyle } from 'pixi.js';
+import PubSub from './PubSub';
 
 function initFrame(layer, resources) {
   const frame = new PIXI.Sprite(resources.frame.texture);
 
-  frame.scale = new PIXI.Point(5, 5);
+  frame.scale.set(5, 5);
 
   layer.addChild(frame);
 }
 
-function initScoreBoard(layer, pubsub) {
-  const style = {
+function initScoreBoard(layer) {
+  const style: Partial<ITextStyle> = {
     fontFamily: 'PressStart2P',
     fill: ['#ef2f22', '#de1f11'],
     fontSize: 50,
@@ -37,30 +39,30 @@ function initScoreBoard(layer, pubsub) {
   };
 
   const string = new PIXI.Text('Score:', style);
-  const score = new PIXI.Text(0, numbersStyle);
+  const score = new PIXI.Text('0', numbersStyle);
 
-  score.anchor = new PIXI.Point(0, 0.5);
+  score.anchor.set(0, 0.5);
   score.x = gameConfig.gameSize.x * 0.5;
   score.y = gameConfig.gameSize.y - 50;
 
-  string.anchor = new PIXI.Point(1, 0.5);
+  string.anchor.set(1, 0.5);
   string.x = gameConfig.gameSize.x * 0.5;
   string.y = gameConfig.gameSize.y - 50;
 
   layer.addChild(score, string);
 
-  pubsub.subscribe('startNewGame', () => {
+  PubSub.subscribe('startNewGame', () => {
     // TODO: add animation
-    score.text = 0;
+    score.text = '0';
   });
 
-  pubsub.subscribe('coinCollected', (value) => {
+  PubSub.subscribe('coinCollected', (value) => {
     // TODO: add animation
     score.text = parseInt(score.text, 10) + value;
   });
 }
 
-function initStartButton(layer, pubsub) {
+function initStartButton(layer) {
   const button = new PIXI.Text('Start', {
     fontFamily: 'PressStart2P',
     fill: ['#4866c5', '#429ad7'],
@@ -78,7 +80,7 @@ function initStartButton(layer, pubsub) {
 
   button.interactive = true;
   button.buttonMode = true;
-  button.anchor = new PIXI.Point(0.5, 0.5);
+  button.anchor.set(0.5, 0.5);
   button.x = gameConfig.gameSize.x * 0.5;
   button.y = gameConfig.gameSize.y * 0.5;
 
@@ -94,9 +96,9 @@ function initStartButton(layer, pubsub) {
   );
 
   button.on('pointerup', () => {
-    pubsub.publish('startNewGame');
+    PubSub.publish('startNewGame');
 
-    button.scale = { x: 1, y: 1 };
+    button.scale.set(1, 1);
     gsap.to(button, {
       duration: 0.5,
       x: '-=800',
@@ -109,28 +111,26 @@ function initStartButton(layer, pubsub) {
   });
 
   button.on('pointerupoutside', () => {
-    button.scale = { x: 1, y: 1 };
+    button.scale.set(1, 1);
   });
 
   button.on('pointerover', () => {
-    button.scale = { x: 1.1, y: 1.1 };
+    button.scale.set(1.1, 1.1);
   });
 
   button.on('pointerdown', () => {
-    button.scale = { x: 0.9, y: 0.9 };
+    button.scale.set(0.9, 0.9);
   });
 
   button.on('pointerout', () => {
-    button.scale = { x: 1, y: 1 };
+    button.scale.set(1, 1);
   });
 
   layer.addChild(button);
 
-  button.bloomAnimation = bloomAnimation;
-
-  pubsub.subscribe('gameOver/done', () => {
+  PubSub.subscribe('gameOver/done', () => {
     button.visible = true;
-    button.bloomAnimation.play();
+    bloomAnimation.play();
     gsap.to(button, {
       duration: 0.5,
       x: '+=800',
@@ -139,7 +139,7 @@ function initStartButton(layer, pubsub) {
   });
 }
 
-function initGameOverSign(layer, pubsub) {
+function initGameOverSign(layer) {
   const text = new PIXI.Text('GAME OVER', {
     fontFamily: 'PressStart2P',
     fill: ['#ef2f22', '#de1f11'],
@@ -155,7 +155,7 @@ function initGameOverSign(layer, pubsub) {
     dropShadowDistance: 7.5,
   });
 
-  text.anchor = new PIXI.Point(0.5, 0.5);
+  text.anchor.set(0.5, 0.5);
   text.scale.x = 0.8;
   text.x = gameConfig.gameSize.x * 0.5;
   text.y = -300;
@@ -163,7 +163,7 @@ function initGameOverSign(layer, pubsub) {
 
   layer.addChild(text);
 
-  pubsub.subscribe('gameOver', () => {
+  PubSub.subscribe('gameOver', () => {
     // show 'game over' sign
     text.visible = true;
 
@@ -171,12 +171,12 @@ function initGameOverSign(layer, pubsub) {
       duration: 2,
       y: gameConfig.gameSize.y * 0.75,
       onComplete: () => {
-        pubsub.publish('gameOver/done');
+        PubSub.publish('gameOver/done');
       },
     });
   });
 
-  pubsub.subscribe('startNewGame', () => {
+  PubSub.subscribe('startNewGame', () => {
     if (text.visible) {
       gsap.to(text, {
         duration: 1,
@@ -190,22 +190,22 @@ function initGameOverSign(layer, pubsub) {
   });
 }
 
-function init(pubsub, resources) {
+function init(resources: PIXI.utils.Dict<PIXI.LoaderResource>) {
   const layer = getRenderLayer('ui');
 
-  initStartButton(layer, pubsub);
-  initGameOverSign(layer, pubsub);
+  initStartButton(layer);
+  initGameOverSign(layer);
   initFrame(layer, resources);
-  initScoreBoard(layer, pubsub);
+  initScoreBoard(layer);
 }
 
 export default {
-  init(pubsub) {
+  init() {
     const assets = { name: 'frame', url: 'assets/images/frame.png' };
 
-    return new Promise((resolve) => {
-      loader.loadResources(assets).then((resources) => {
-        init(pubsub, resources);
+    return new Promise<void>((resolve) => {
+      loader.loadResources([assets]).then((resources) => {
+        init(resources);
         resolve();
       });
     });

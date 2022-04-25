@@ -36,9 +36,9 @@ function reScale(container) {
 
 function initRenderer(stage, container) {
   const renderer = PIXI.autoDetectRenderer({
-    with: BASE_WIDTH,
+    width: BASE_WIDTH,
     height: BASE_HEIGHT,
-    backgroundAlpha: true,
+    backgroundAlpha: 0,
   });
 
   PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
